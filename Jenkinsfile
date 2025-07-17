@@ -18,7 +18,7 @@ pipeline {
         stage('Clean Workspace') {
             steps {
                 echo '🧹 Cleaning workspace...'
-                deleteDir() // Clears the Jenkins workspace
+                deleteDir()
             }
         }
 
