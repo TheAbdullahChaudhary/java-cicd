@@ -15,8 +15,16 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                echo '🧹 Cleaning workspace...'
+                deleteDir() // Clears the Jenkins workspace
+            }
+        }
+
         stage('Clone Repo') {
             steps {
+                echo '🔁 Cloning GitHub repository...'
                 withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                     sh 'git clone https://$GIT_USER:$GIT_TOKEN@github.com/MuhammadAbraiz/java-cicd.git .'
                 }
@@ -25,18 +33,21 @@ pipeline {
 
         stage('Build') {
             steps {
+                echo '🔨 Building project with Maven...'
                 sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
+                echo '🐳 Building Docker image...'
                 sh "docker build -t $IMAGE_NAME ."
             }
         }
 
         stage('Deploy Docker Container') {
             steps {
+                echo '🚀 Deploying Docker container...'
                 sh "docker stop $CONTAINER_NAME || true"
                 sh "docker rm $CONTAINER_NAME || true"
                 sh "docker run -d --name $CONTAINER_NAME -p $HOST_PORT:$CONTAINER_PORT $IMAGE_NAME"
@@ -46,6 +57,7 @@ pipeline {
 
     post {
         always {
+            echo '📦 Archiving JAR artifacts...'
             archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
         }
     }
