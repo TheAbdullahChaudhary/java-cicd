@@ -1,16 +1,17 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven 3.9.11'
-        jdk 'JDK'
-    }
-
     environment {
+        JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
         IMAGE_NAME = 'nortwind-app'
         CONTAINER_NAME = 'nortwind-container'
         HOST_PORT = '8081'
         CONTAINER_PORT = '8080'
+    }
+
+    tools {
+        maven 'Maven 3.9.11'
     }
 
     stages {
