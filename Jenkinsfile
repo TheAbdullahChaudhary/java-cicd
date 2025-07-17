@@ -14,21 +14,26 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repo') {
             steps {
-                checkout scm
+                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    sh 'git clone https://$GIT_USER:$GIT_TOKEN@github.com/MuhammadAbraiz/java-cicd.git .'
+                }
             }
         }
+
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t $IMAGE_NAME ."
             }
         }
+
         stage('Deploy Docker Container') {
             steps {
                 sh "docker stop $CONTAINER_NAME || true"
@@ -37,6 +42,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
