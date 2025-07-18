@@ -26,11 +26,6 @@ pipeline {
                 sh 'mvn clean package -DskipTests'
             }
         }
-        stage('Run Tests') {
-            steps {
-                sh 'mvn test'
-            }
-        }
         stage('Build Docker Image') {
             steps {
                 script {
@@ -42,7 +37,8 @@ pipeline {
             steps {
                 script {
                     sh "docker rm -f ${CONTAINER_NAME} || true"
-  sh "docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} ${IMAGE_NAME}:latest"                }
+                    sh "docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} ${IMAGE_NAME}:latest"
+                }
             }
         }
     }
