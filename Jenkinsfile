@@ -1,13 +1,15 @@
 pipeline {
     agent any
-
+    tools {
+        jdk 'JDK'         // Name as configured in Jenkins
+        maven 'Maven'     // Name as configured in Jenkins
+    }
     environment {
-        // Set your image name here
         IMAGE_NAME = 'nortwind-app'
         CONTAINER_NAME = 'nortwind-container'
-        PORT = '8081'
+        HOST_PORT = '8081'
+        CONTAINER_PORT = '8080'
     }
-
     stages {
         stage('Clean Workspace') {
             steps {
@@ -21,20 +23,17 @@ pipeline {
         }
         stage('Build with Maven') {
             steps {
-                // Use Maven to build the project
-                sh './mvnw clean package -DskipTests=false'
+                sh 'mvn clean package -DskipTests=false'
             }
         }
         stage('Run Tests') {
             steps {
-                // Run tests separately if needed
-                sh './mvnw test'
+                sh 'mvn test'
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image using Dockerfile in project root
                     sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
             }
@@ -42,18 +41,14 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 script {
-                    // Stop and remove any existing container
                     sh "docker rm -f ${CONTAINER_NAME} || true"
-                    // Run the new container
-                    sh "docker run -d --name ${CONTAINER_NAME} -p ${PORT}:8080 ${IMAGE_NAME}:latest"
-                }
+  sh "docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} ${IMAGE_NAME}:latest"                }
             }
         }
     }
     post {
         always {
-            // Optionally, clean up workspace after build
             cleanWs()
         }
     }
-}
+} 
