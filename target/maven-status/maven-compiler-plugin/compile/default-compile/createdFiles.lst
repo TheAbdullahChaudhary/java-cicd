@@ -1,0 +1,12 @@
+kodllamaio\nortwind\core\utilities\results\ErrorResult.class
+kodllamaio\nortwind\api\controllers\ProductsController.class
+kodllamaio\nortwind\core\utilities\results\ErrorDataResult.class
+kodllamaio\nortwind\core\utilities\results\SuccessDataResult.class
+kodllamaio\nortwind\core\utilities\results\SuccessResult.class
+kodllamaio\nortwind\dataAccess\abstracts\ProductDao.class
+kodllamaio\nortwind\core\utilities\results\Result.class
+kodllamaio\nortwind\core\utilities\results\DataResult.class
+kodllamaio\nortwind\business\concretes\ProductManager.class
+kodllamaio\nortwind\NortwindApplication.class
+kodllamaio\nortwind\entities\concretes\Product.class
+kodllamaio\nortwind\business\abstracts\ProductService.class
