@@ -7,10 +7,11 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = 'nortwind-app'
-        CONTAINER_NAME = 'nortwind-container'
-        HOST_PORT = '8081'
-        CONTAINER_PORT = '8081'
+        JAVA_HOME = tool('JDK_21')
+        MAVEN_HOME = tool('maven')
+        IMAGE_NAME = 'my-java-app'
+        CONTAINER_NAME = 'my-java-app'
+        APP_PORT = '8081'
     }
 
     stages {
@@ -31,9 +32,19 @@ pipeline {
         }
         stage('Deploy Docker Container') {
             steps {
-                sh "docker stop $CONTAINER_NAME || true"
-                sh "docker rm $CONTAINER_NAME || true"
-                sh "docker run -d --name $CONTAINER_NAME -p $HOST_PORT:$CONTAINER_PORT $IMAGE_NAME"
+                echo "🚀 Deploying Docker container..."
+                bat """
+                    docker rm -f %CONTAINER_NAME% 2>nul || echo no old container
+                    docker run -d -p %APP_PORT%:%APP_PORT% --name %CONTAINER_NAME% %IMAGE_NAME%
+                """
+            }
+        }
+        stage('Health Check') {
+            steps {
+                echo "🔍 Hitting /actuator/health on http://localhost:%APP_PORT%"
+                retry(5) {
+                    bat "curl --fail http://localhost:%APP_PORT%/actuator/health"
+                }
             }
         }
     }
