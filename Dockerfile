@@ -1,11 +1,11 @@
 FROM openjdk:21-jdk-slim
 WORKDIR /app
 
-# copy the JAR that mvn has produced
+# copy in the fat JAR
 COPY target/*.jar app.jar
 
-# tell Docker this container listens on 8080
+# we run on 8080 inside the container
 EXPOSE 8080
 
-# pass -Dserver.port=8080 explicitly
+# force Spring Boot to use port 8080
 ENTRYPOINT ["java","-Dserver.port=8080","-jar","app.jar"]
