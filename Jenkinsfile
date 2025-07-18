@@ -1,56 +1,90 @@
 pipeline {
-    agent any
+  agent any
 
-    tools {
-        maven 'Maven 3.9.11' // Use the Maven tool name as configured in Jenkins
-        jdk 'JDK'            // Use the JDK tool name as configured in Jenkins
+  tools {
+    jdk    'JDK_21'        // your Jenkins JDK install name
+    maven  'Maven_3.9.10'  // your Jenkins Maven install name
+  }
+
+  environment {
+    MAVEN_HOME      = tool('Maven_3.9.10')
+    IMAGE_NAME      = 'my-java-app'
+    CONTAINER_NAME  = 'my-java-app'
+    HOST_PORT       = '8081'
+    CONTAINER_PORT  = '8080'
+    IMAGE_TAG       = "${BUILD_NUMBER}"
+  }
+
+  stages {
+    stage('Clean') {
+      steps { deleteDir() }
     }
 
-    environment {
-        JAVA_HOME = tool('JDK_21')
-        MAVEN_HOME = tool('maven')
-        IMAGE_NAME = 'my-java-app'
-        CONTAINER_NAME = 'my-java-app'
-        APP_PORT = '8081'
+    stage('Checkout') {
+      steps {
+        git url: 'https://github.com/MuhammadAbraiz/java-cicd.git', branch: 'main'
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-        stage('Build') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                sh "docker build -t $IMAGE_NAME ."
-            }
-        }
-        stage('Deploy Docker Container') {
-            steps {
-                echo "🚀 Deploying Docker container..."
-                bat """
-                    docker rm -f %CONTAINER_NAME% 2>nul || echo no old container
-                    docker run -d -p %APP_PORT%:%APP_PORT% --name %CONTAINER_NAME% %IMAGE_NAME%
-                """
-            }
-        }
-        stage('Health Check') {
-            steps {
-                echo "🔍 Hitting /actuator/health on http://localhost:%APP_PORT%"
-                retry(5) {
-                    bat "curl --fail http://localhost:%APP_PORT%/actuator/health"
-                }
-            }
-        }
+    stage('Build JAR') {
+      steps {
+        bat "\"%MAVEN_HOME%\\bin\\mvn\" clean package -DskipTests"
+      }
     }
-    post {
-        always {
-            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-        }
+
+    stage('Build Docker Image') {
+      steps {
+        bat """
+          copy /Y target\\*.jar app.jar
+          docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+        """
+      }
     }
+
+    stage('Deploy Container') {
+      steps {
+        bat """
+          docker rm -f %CONTAINER_NAME% 2>nul || echo none
+          docker run -d -p %HOST_PORT%:%CONTAINER_PORT% --name %CONTAINER_NAME% %IMAGE_NAME%:%IMAGE_TAG%
+        """
+      }
+    }
+
+    stage('Health Check') {
+      steps {
+        echo "🔍 Waiting for http://localhost:%HOST_PORT%/actuator/health"
+        powershell """
+          for ($i=0; $i -lt 6; $i++) {
+            try {
+              $resp = Invoke-RestMethod -Uri http://localhost:%HOST_PORT%/actuator/health -UseBasicParsing
+              if ($resp.status -eq 'UP') {
+                Write-Host '✅ App is healthy!'
+                exit 0
+              }
+            } catch {}
+            Start-Sleep -Seconds 5
+          }
+          Write-Error '❌ Health check failed after retries'
+          exit 1
+        """
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "🚀 Application live at http://localhost:${HOST_PORT}"
+    }
+    failure {
+      echo "❌ Deployment failed; container logs below:"
+      bat "docker logs %CONTAINER_NAME% || echo No logs found"
+    }
+    always {
+      echo "🧹 Cleaning up Docker artifacts"
+      bat """
+        docker rm -f %CONTAINER_NAME% 2>nul || echo none
+        docker rmi -f %IMAGE_NAME%:%IMAGE_TAG% 2>nul || echo none
+      """
+    }
+  }
 }
